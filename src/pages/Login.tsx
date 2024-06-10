@@ -4,6 +4,10 @@ import { FieldValues, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useContext, useEffect } from "react";
+import { AuthContext } from "../store/authContext";
+import { signupApi } from "../utils/http";
 
 type LoginForm = {
   email: string;
@@ -14,10 +18,11 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z
     .string()
-    .min(10, "Password at the time of creation was atleast 3 char long"),
+    .min(3, "Password at the time of creation was atleast 3 char long"),
 });
 
 const Login = () => {
+  const { login, authorised } = useContext(AuthContext);
   const {
     handleSubmit,
     register,
@@ -28,11 +33,22 @@ const Login = () => {
   });
   const navigate = useNavigate();
   const onSubmit = async (data: FieldValues) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log(data);
+    try {
+      await login({ email: data.email, password: data.password }, "login");
+      toast.success("Login successful");
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred during logging in");
+      return;
+    }
     reset();
     navigate("/active");
   };
+  useEffect(() => {
+    //to prevent going back to login page once the login is successful
+    if (localStorage.getItem("access_token")) {
+      navigate("/active");
+    }
+  }, []);
   return (
     <section className="dark:bg-gray-900">
       <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">

@@ -4,12 +4,15 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useContext, useEffect } from "react";
+import { AuthContext } from "../store/authContext";
 
 //we define a schema using zod so that we have a single source of truth on server and client side
 const signUpSchema = z
   .object({
     email: z.string().email(),
-    password: z.string().min(3, "Password should be 10 characters long"),
+    password: z.string().min(3, "Password should be minimum 3 characters long"),
     confirmPassword: z.string(),
     terms: z.boolean(),
   })
@@ -28,6 +31,7 @@ const labelStyle =
   "block mb-2 text-sm font-medium text-gray-900 dark:text-white";
 
 const Signup = () => {
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const {
     register,
@@ -39,11 +43,22 @@ const Signup = () => {
   });
 
   const onSubmit = async (data: any) => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    console.log("hehe", data);
+    try {
+      await login({ email: data.email, password: data.password }, "signup");
+      toast.success("Signup successful");
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred during signup");
+      return;
+    }
     reset();
     navigate("/");
   };
+  useEffect(() => {
+    //to prevent going back to login page once the login is successful
+    if (localStorage.getItem("access_token")) {
+      navigate("/active");
+    }
+  }, []);
   return (
     <section className="dark:bg-gray-900 min-h-screen">
       <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
